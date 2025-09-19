@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots  # Importação necessária
 import re
 import numpy as np
 import datetime
@@ -253,25 +254,38 @@ def plot_commodity_trends(df):
     col1, col2 = st.columns(2)
 
     with col1:
-        fig_futuro = go.Figure()
+        # Cria a figura com um eixo Y secundário
+        fig_futuro = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Adiciona o C. Futuro ao eixo Y primário (esquerda)
         fig_futuro.add_trace(go.Scatter(
             x=df['Mês'],
             y=df['C. Futuro'],
             mode='lines+markers',
             name='C. Futuro'
-        ))
+        ), secondary_y=False)
+
+        # Adiciona o Prêmio ao eixo Y secundário (direita)
         fig_futuro.add_trace(go.Scatter(
             x=df['Mês'],
             y=df['Prêmio'],
             mode='lines+markers',
             name='Prêmio'
-        ))
+        ), secondary_y=True)
+
+        # Atualiza os títulos e o layout geral
         fig_futuro.update_layout(
             title_text='<b>Curva de Preço Futuro e Prêmio</b>',
             xaxis_title="Mês",
-            yaxis_title="Preço (cents/bushel)"
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
+        
+        # Define os títulos para cada eixo Y
+        fig_futuro.update_yaxes(title_text="<b>C. Futuro (cents/bushel)</b>", secondary_y=False)
+        fig_futuro.update_yaxes(title_text="<b>Prêmio (cents/bushel)</b>", secondary_y=True)
+        
         st.plotly_chart(fig_futuro, use_container_width=True)
+
 
     with col2:
         fig_dolar = go.Figure()
@@ -627,4 +641,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
