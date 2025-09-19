@@ -228,8 +228,6 @@ def plot_projection_chart(df_projecao, taxa_juros_anual):
         lucro_final_proj = lucro_antes_capital[:, np.newaxis] - custo_capital_proj
         margens_proj = np.divide(lucro_final_proj, venda_total[:, np.newaxis], where=venda_total[:, np.newaxis]!=0, out=np.zeros_like(lucro_final_proj)) * 100
         
-        # Armazena o índice original para usar no iloc
-        original_indices = df_projecao.index
         df_projecao_reset = df_projecao.reset_index(drop=True)
 
         for i, row in df_projecao_reset.iterrows():
@@ -246,6 +244,50 @@ def plot_projection_chart(df_projecao, taxa_juros_anual):
         height=500
     )
     return fig
+
+def plot_commodity_trends(df):
+    """Gera gráficos de linha para as tendências de C. Futuro, Prêmio e Dólar."""
+    st.markdown("---")
+    st.subheader("Visualização da Perspectiva de Preços")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig_futuro = go.Figure()
+        fig_futuro.add_trace(go.Scatter(
+            x=df['Mês'],
+            y=df['C. Futuro'],
+            mode='lines+markers',
+            name='C. Futuro'
+        ))
+        fig_futuro.add_trace(go.Scatter(
+            x=df['Mês'],
+            y=df['Prêmio'],
+            mode='lines+markers',
+            name='Prêmio'
+        ))
+        fig_futuro.update_layout(
+            title_text='<b>Curva de Preço Futuro e Prêmio</b>',
+            xaxis_title="Mês",
+            yaxis_title="Preço (cents/bushel)"
+        )
+        st.plotly_chart(fig_futuro, use_container_width=True)
+
+    with col2:
+        fig_dolar = go.Figure()
+        fig_dolar.add_trace(go.Scatter(
+            x=df['Mês'],
+            y=df['Dólar'],
+            mode='lines+markers',
+            name='Dólar',
+            line=dict(color='green')
+        ))
+        fig_dolar.update_layout(
+            title_text='<b>Curva do Dólar</b>',
+            xaxis_title="Mês",
+            yaxis_title="Taxa de Câmbio (R$)"
+        )
+        st.plotly_chart(fig_dolar, use_container_width=True)
 
 # --- Novas Funções para Ferramentas de Commodities ---
 
@@ -312,6 +354,8 @@ def render_monthly_pricing_calculator():
         }
     )
     
+    plot_commodity_trends(edited_df)
+
     # Extrai apenas as colunas de input do dataframe editado
     new_input_df = edited_df[["Mês", "C. Futuro", "Prêmio", "Dólar"]]
 
@@ -319,6 +363,7 @@ def render_monthly_pricing_calculator():
     if not new_input_df.equals(input_df):
         st.session_state[session_key] = new_input_df
         st.rerun()
+
 
 def render_unit_converter():
     """Renderiza um conversor de unidades para commodities."""
@@ -367,6 +412,16 @@ def render_unit_converter():
 # --- Interface Principal do Streamlit ---
 
 def main():
+    # Adiciona CSS para aumentar a fonte nas tabelas
+    st.markdown("""
+        <style>
+            div[data-testid="stDataFrame"] table, 
+            div[data-testid="stDataEditor"] table {
+                font-size: 18px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title("Dashboard de Viabilidade de Produtos e Mercados")
 
     # --- Inicialização do Estado da Sessão ---
@@ -521,10 +576,8 @@ def main():
             st.subheader("3. Resultados Consolidados da Simulação")
             st.markdown("**Análise Detalhada por Produto**")
             
-            # Reverter para o formato de exibição mais detalhado, como solicitado
             df_display_details = consolidated_df.copy()
             
-            # Criar um formatador abrangente
             detail_formatter = {
                 "Qtd. Mín.": "{:,.0f}", "Venda (R$/kg)": "R$ {:,.2f}",
                 "MÉDIA/KG": "R$ {:,.2f}", "KG da Unidade": "{:,.3f} kg",
@@ -545,7 +598,6 @@ def main():
 
             st.markdown("**Resumo por Cenário**")
 
-            # Criar formatador para o resumo
             summary_formatter = {
                 "Investimento Total (R$)": "R$ {:,.2f}", "Venda Total (R$)": "R$ {:,.2f}",
                 "Lucro Bruto (R$)": "R$ {:,.2f}", "Variação Cambial (R$)": "R$ {:,.2f}",
@@ -562,7 +614,7 @@ def main():
             taxa_juros_plot = st.session_state.get('taxa_juros_anual_calculada', 12.0)
             st.plotly_chart(plot_projection_chart(consolidated_df, taxa_juros_plot), use_container_width=True)
         elif st.session_state.df_base.empty:
-            pass # Não mostra nada se nenhum arquivo foi carregado
+            pass 
         else:
             st.info("Clique em 'Analisar Cenários e Gerar Resultados' acima para visualizar a análise.")
 
